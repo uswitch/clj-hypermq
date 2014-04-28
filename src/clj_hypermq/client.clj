@@ -20,6 +20,10 @@
             prev-page (get-in response [:body :_links :prev :href])]
         (lazy-cat messages (lazy-messages prev-page)))))
 
+(defn not-matching
+  [etag]
+  (fn [msg] (not= (msg :uuid) etag)))
+
 (defn fetch-messages
-  [host queue]
-  (lazy-messages (build-uri host queue)))
+  [host queue & {:keys [etag]}]
+  (take-while (not-matching etag) (lazy-messages (build-uri host queue))))

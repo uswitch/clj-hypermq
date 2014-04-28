@@ -29,8 +29,8 @@
 (fact "fetches a single message"
       (fetch-messages "http://server" "myqueue") => [{:uuid "1" :title "mytitle" :author "author" :timestamp 54321}]
       (provided
-       (http/get anything anything) => {:_embedded
-                                        {:message [{:uuid "1" :title "mytitle" :author "author" :timestamp 54321}]}}))
+       (http/get anything anything) => {:body {:_embedded
+                                               {:message [{:uuid "1" :title "mytitle" :author "author" :timestamp 54321}]}}}))
 
 (fact "will crawl prev links when present"
       (fetch-messages "http://server" "myqueue") => anything
@@ -48,3 +48,11 @@
                                                                   :_embedded {:message [{:uuid "2"}]}}}
        (http/get "http://server/q/myqueue/0" anything) => {:body {:_links {}
                                                                   :_embedded {:message [{:uuid "1"}]}}}))
+
+(fact "should fetch up to last known etag"
+      (fetch-messages "http://server" "myqueue" :etag "2") => [{:uuid "3"}]
+      (provided
+       (http/get "http://server/q/myqueue" anything) => {:body {:_links {:prev {:href "http://server/q/myqueue/1"}}
+                                                                :_embedded {:message [{:uuid "3"}]}}}
+       (http/get "http://server/q/myqueue/1" anything) => {:body {:_links {:prev {:href "http://server/q/myqueue/0"}}
+                                                                  :_embedded {:message [{:uuid "2"}]}}}))
