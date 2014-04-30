@@ -56,3 +56,14 @@
                                                                 :_embedded {:message [{:uuid "3"}]}}}
        (http/get "http://server/q/myqueue/1" anything) => {:body {:_links {:prev {:href "http://server/q/myqueue/0"}}
                                                                   :_embedded {:message [{:uuid "2"}]}}}))
+
+(fact "client acknowledges a message"
+      (acknowledge "http://server" "myqueue" "myclient" "uuid12345") => true?
+      (provided
+       (http/post "http://server/ack/myqueue/myclient" {:form-params {:uuid "uuid12345"}
+                                                        :content-type :json}) => {:status 201}))
+
+(fact "client retrieves last seen message for a queue"
+      (last-seen-message "http://server" "myqueue" "myclient") => "uuid-54321"
+      (provided
+       (http/get "http://server/ack/myqueue/myclient" anything) => {:body {:uuid "uuid-54321"}}))
