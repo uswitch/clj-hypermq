@@ -10,22 +10,22 @@ A Clojure client library for [hypermq][1]
 (:require [hypermq.client :as client])
 
 ; Create messages on a queue
-(client/create-message "http://localhost" "myqueue" "my-event" "producer1" {:msg "1"})
+(client/create-message "http://localhost" "myqueue" "producer1" {:msg "1"})
 ; true
-(client/create-message "http://localhost" "myqueue" "my-event" "producer1" {:msg "2"})
+(client/create-message "http://localhost" "myqueue" "producer1" {:msg "2"})
 ; true
 
 ; Consume messages from a queue
 (client/fetch-messages "http://localhost" "myqueue")
-; [{:uuid "f83d9e11-58ed-446e-bc78-461f60b6189f" :timestamp 1398728082 :title "my-event" :author "producer1" :content {:msg "1"}} 
-;  {:uuid "40d9141d-7d5e-445c-b9ce-4be2e7d93da3" :timestamp 1398729082 :title "my-event" :author "producer1" :content {:msg "2"}}]
+; [{:id "f83d9e11-58ed-446e-bc78-461f60b6189f" :created 1398728082 :producer "producer1" :body {:msg "1"}} 
+;  {:id "40d9141d-7d5e-445c-b9ce-4be2e7d93da3" :created 1398729082 :producer "producer1" :body {:msg "2"}}]
 
 ; Optionally provide uuid of last seen message as etag to fetch only more recent messages 
 (client/fetch-messages "http://localhost" "myqueue" :etag "f83d9e11-58ed-446e-bc78-461f60b6189f") 
-; [{:uuid "40d9141d-7d5e-445c-b9ce-4be2e7d93da3" :timestamp 1398729082 :title "my-event" :author "producer1" :content {:msg "2"}}]
+; [{:id "40d9141d-7d5e-445c-b9ce-4be2e7d93da3" :created 1398729082 :producer "producer1" :body {:msg "2"}}]
 
-; Acknowledge message as seen by it's uuid
-; This simply stores the uuid for the client. It does not effect call to `fetch-messages` in any way. 
+; Acknowledge message as seen by it's id
+; This simply stores the id for the client. It does not effect call to `fetch-messages` in any way. 
 (acknowledge "http://localhost" "myqueue" "client1" "f83d9e11-58ed-446e-bc78-461f60b6189f")
 ; true
 
