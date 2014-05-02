@@ -5,10 +5,12 @@
   ([host queue]
      (format "%s/q/%s" host queue))
   ([host queue etag]
-     (format "%s/q/%s%s" host queue (if etag (str "/" etag) ""))))
+     (if etag
+       (format "%s/q/%s/%s" host queue etag)
+       (build-uri host queue))))
 
 (defn- build-ack-uri [host queue client]
-  (str host "/ack/" queue "/" client))
+  (format "%s/ack/%s/%s" host queue client))
 
 (defn- lazy-messages
   [uri]
