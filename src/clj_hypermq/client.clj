@@ -1,8 +1,11 @@
 (ns clj-hypermq.client
   (:require [clj-http.client :as http]))
 
-(defn- build-uri [host queue]
-  (str host "/q/" queue))
+(defn- build-uri
+  ([host queue]
+     (format "%s/q/%s" host queue))
+  ([host queue etag]
+     (format "%s/q/%s%s" host queue (if etag (str "/" etag) ""))))
 
 (defn- build-ack-uri [host queue client]
   (str host "/ack/" queue "/" client))
@@ -12,28 +15,24 @@
   (when uri
       (let [response (http/get uri {:as :json})
             messages (get-in response [:body :_embedded :message])
-            prev-page (get-in response [:body :_links :prev :href])]
-        (lazy-cat messages (lazy-messages prev-page)))))
-
-(defn- not-matching
-  [etag]
-  (fn [msg] (not= (msg :uuid) etag)))
+            next-page (get-in response [:body :_links :next :href])]
+        (lazy-cat messages (lazy-messages next-page)))))
 
 (defn create-message
-  [host queue title author content]
-  (let [msg {:title title :author author :content content}
+  [host queue producer body]
+  (let [msg {:producer producer :body body}
         response (http/post (build-uri host queue) {:form-params msg :content-type :json})]
     (case (response :status)
-      200 true
+      201 true
       false)))
 
 (defn fetch-messages
   [host queue & {:keys [etag]}]
-  (take-while (not-matching etag) (lazy-messages (build-uri host queue))))
+  (lazy-messages (build-uri host queue etag)))
 
 (defn acknowledge
-  [host queue client uuid]
-  (let [msg {:uuid uuid}
+  [host queue client msg-id]
+  (let [msg {:id msg-id}
         response (http/post (build-ack-uri host queue client) {:form-params msg :content-type :json})]
     (case (response :status)
       201 true
@@ -42,4 +41,4 @@
 (defn last-seen-message
  [host queue client]
  (let [response (http/get (build-ack-uri host queue client) {:as :json})]
-   (get-in response [:body :uuid])))
+   (get-in response [:body :message])))
